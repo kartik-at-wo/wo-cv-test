@@ -1,0 +1,21 @@
+<div class="container mt-5" ng-controller="Page3Controller">
+		       <h1>GCP DRIVE FILE</h1>
+			   <br>
+		       <form ng-submit="getDriveFileList()" novalidate>
+		           <button type="submit" class="btn btn-primary">List Drive File</button>
+		       </form>
+
+		       <h2 class="mt-3">Drive File's</h3>
+		       <table class="table table-striped">
+		           <thead>
+		               <tr>
+		                   <th>Name</th>
+		               </tr>
+		           </thead>
+		           <tbody>
+		               <tr ng-repeat="file in driveFiles">
+		                   <td>{{ file.name }}</td>
+		               </tr>
+		           </tbody>
+		       </table>
+</div>

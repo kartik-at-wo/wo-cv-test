@@ -1,0 +1,31 @@
+<div class="container mt-5" ng-controller="Page2Controller">
+		       <h1>GCP DATASTORE</h1>
+			   <br>
+		       <form ng-submit="saveuserData()" novalidate>
+		           <div class="form-group">
+		               <label for="name">Name:</label>
+		               <input type="text" class="form-control" id="name" ng-model="formData.name" required>
+		           </div>
+		           <div class="form-group">
+		               <label for="email">Email:</label>
+		               <input type="email" class="form-control" id="email" ng-model="formData.email" required>
+		           </div>
+		           <button type="submit" class="btn btn-primary">Submit</button>
+		       </form>
+
+		       <h2 class="mt-5">Submitted Data</h2>
+		       <table class="table table-striped">
+		           <thead>
+		               <tr>
+		                   <th>Name</th>
+		                   <th>Email</th>
+		               </tr>
+		           </thead>
+		           <tbody>
+		               <tr ng-repeat="entry in entries">
+		                   <td>{{ entry.name }}</td>
+		                   <td>{{ entry.email }}</td>
+		               </tr>
+		           </tbody>
+		       </table>
+</div>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AngularJS SPA</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-route.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-animate.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-sanitize.js"></script>
+    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-2.5.0.js"></script>
+	<link href="//netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>`
+</head>
+
+<body ng-app="myApp">
+
+    <div class="container">
+        <header class="mb-4">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <a class="navbar-brand" href="#">Wo Test APP </a>
+                <div class="collapse navbar-collapse">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" ng-href="#!page1" style="margin-left:15px">GCP SQL</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" ng-href="#!page2" style="margin-left:15px">GCP DATASTORE</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" ng-href="#!page3" style="margin-left:15px">GCP DRIVE API</a>
+                        </li>
+						<li class="nav-item">
+						    <a class="nav-link" ng-href="#!page4" style="margin-left:15px">Test</a>
+						</li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+
+        <div ng-view></div>
+    </div>
+
+	<script>
+		angular.module('myApp', ['ngRoute', 'ui.bootstrap'])
+		.config(function($routeProvider) {
+		    $routeProvider
+		    .when('/page1', {
+		        templateUrl: '/html/page1.html',
+		        controller: 'Page1Controller'
+		    })
+		    .when('/page2', {
+		        templateUrl: '/html/page2.html',
+		        controller: 'Page2Controller'
+		    })
+		    .when('/page3', {
+		        templateUrl: '/html/page3.html',
+		        controller: 'Page3Controller'
+		    })
+			.when('/page4', {
+				templateUrl: '/html/page4.html',
+				controller: 'Page4Controller'
+			})
+		    .otherwise({
+		        redirectTo: '/page1'
+		    });
+		})
+		.controller('Page1Controller',[ '$scope', '$http', '$uibModal', function($scope, $http, $uibModal) {
+		    $scope.checkboxValue = false;
+		    $scope.radioValue = "";	
+			$scope.selectedemp = null;
+			
+			
+			//Get data from datastore							
+			$http.get("http://localhost:8080/api/company/getall").then(
+				  function successCallback(response) {
+					    $scope.response = response;
+						$scope.sqldData = [];
+																			   
+						var listOfCompany = response.data;
+						
+						if(listOfCompany && listOfCompany.length){
+							var s = listOfCompany.map(function(company) {
+									$scope.sqldData.push({
+										  id:company.id,
+									      name: company.name,
+										  email: company.email,
+										  phone: company.phone,
+										  isPermanent:company.isPermanent,
+										  branch: company.branch,
+									});
+							});
+						}else{
+							console.log("No data found company");
+						}
+			      },
+				  function errorCallback(response) {
+						console.log("Unable to perform get request for company");
+				  }
+			);
+			
+			
+			
+			$scope.editCompanyData = function(data, index, formTableData) {
+					  var editPopUpBox = $uibModal.open({
+					     ariaLabelledBy: 'modal-title',
+					     ariaDescribedBy: 'modal-body',
+					     templateUrl: 'myModalContent.html',
+					     size: "lg",
+					     controller: 'modalController',
+						 resolve: {
+						          dataToEditAndIndex: function() {
+						                 return { companydata: data, editindex: index, tabledata:formTableData };
+						              }
+								  }
+					   });
+					    
+					   editPopUpBox.result.then(function (user) {
+					          $scope.enteredUser = user;
+							  
+					   }, function () {
+					 	  //console.log("################# Modal dismissed #############")
+					   });
+			 };
+					   
+			 //End of get data 
+			$scope.submitForm = function() {
+				 					
+				  if ($scope.formData.name && $scope.formData.email && $scope.formData.phone && $scope.formData.branch && $scope.formData.isPermanent) {
+				 					
+				 		var saveCompanyPayload = {
+					 		name:$scope.formData.name,
+				            email:$scope.formData.email,
+							phone:$scope.formData.phone,
+							branch:$scope.formData.branch,
+							isPermanent:$scope.formData.isPermanent
+				 		}
+						
+						//console.log("EMP DATA"+JSON.stringify(saveCompanyPayload));
+						
+						//start saving data to gcp sql
+						$http.post("http://localhost:8080/api/company/save", saveCompanyPayload).then(
+							function successCallback(response) {
+							      // console.log("Successfully POST-ed data" + response.data);
+								   if(response.data){
+									   $scope.sqldData.push({
+										   id:response.data.id,
+										   name:$scope.formData.name,
+										   email:$scope.formData.email,
+										   phone:$scope.formData.phone,
+										   branch:$scope.formData.branch,
+										   isPermanent:$scope.formData.isPermanent
+									   	});
+									   	
+										$scope.formData = {}; 
+								   }else{
+									  console.log("No Data returned from comapny");
+								   }
+								   
+							},
+							function errorCallback(response) {
+									console.log("Something wend wrong while save company details "+response);
+							}
+						);//end saving data
+			     }
+		    }			
+									
+			
+		}])
+		.controller('Page2Controller', function($scope,$http) {
+		    $scope.checkboxValue = false;
+		    $scope.radioValue = "";
+			$scope.formData = {};
+			$scope.entries = [];
+			
+			
+			//Get data from datastore							
+			$http.get("http://localhost:8080/api/objectify/user/getall").then(
+					function successCallback(response) {
+						$scope.response = response;
+						$scope.entries = [];
+																   
+						var listOfUser = response.data;
+						if(listOfUser && listOfUser.length) {									               
+							var result = listOfUser.map(function(user) {
+									$scope.entries.push({
+									      name: user.name,
+										  email: user.email
+									});
+							});
+						}else{
+							console.log("No data found for user")
+						}
+					},
+					
+					function errorCallback(response) {
+							console.log("Unable to perform get request");
+					}
+			); //End of get data 
+		 
+		 
+			 $scope.saveuserData = function() {
+				  if ($scope.formData.name && $scope.formData.email) {
+				 					
+				 		var saveUserPayload = {
+					 		name:$scope.formData.name,
+			                email:$scope.formData.email
+				 		}
+				 				
+						$http.post("http://localhost:8080/api/objectify/user/save", saveUserPayload).then(
+						 		function successCallback(response) {
+									var userData = response.data;
+									if(userData){
+										$scope.entries.push({
+											name: $scope.formData.name,
+											email: $scope.formData.email
+										});
+										
+										$scope.formData = {};
+									}
+						 		},	
+						 		function errorCallback(response) {
+						 				console.log("Failed to save user data"+response)
+						 		}
+					  );			 
+			    }
+		    }
+		
+	  }).controller('Page3Controller', function($scope, $http) {
+			$scope.getDriveFileList = function() {
+				   //Strt get file data 							
+				  $http.get("http://localhost:8080/api/drive/listfile").then(
+					   function successCallback(response) {
+						    $scope.response = response;
+							$scope.driveFiles = [];
+																						   
+							var driveFileList = response.data;
+							if(driveFileList){
+								var s = driveFileList.map(function(filename) {
+											$scope.driveFiles.push({
+											   name: filename
+											});
+								});
+							}
+					  },
+					  function errorCallback(response) {
+						 console.log("Unable to perform get request");
+					  }
+				); // End of get file data
+			}
+			
+	  })
+	  .controller('Page4Controller', function($scope, $http) {
+		  $scope.userList = [];
+		 
+		   var preLoadedUserData = [
+		    {id:'', name:'Sachin', age:50, retired: true, isFoodBoller: false},
+			{id:'', name:'Rohit', age:37,retired: false,isFoodBoller: false },
+			{id:'', name:'Virat', age:37, retired: false, isFoodBoller: false },
+			{id:'', name:'Yuvraj', age:48, retired: true, isFoodBoller: false},
+			{id:'', name:'Sehvag', age:52, retired: true, isFoodBoller: false },
+			{id:'', name:'Ronaldo', age:30, retired: false, isFoodBoller: true},
+			{id:'', name:'Messi', age:32,retired: false,isFoodBoller: true },
+			{id:'', name:'Jr Nemar', age:35, retired: false, isFoodBoller: true },
+			{id:'', name:'Sunil Chhetri', age:34, retired: true, isFoodBoller: true},
+			{id:'', name:'Shreenivas', age:25, retired: false, isFoodBoller: true }
+		   ];
+		   
+		   for(i=0;i<=preLoadedUserData.length;i++){
+		   		var user = preLoadedUserData[i];
+ 			    $scope.userList.push(user);
+		   }
+		   
+		   $scope.generateUUIdForUser = function(){
+			  $scope.userList = [];
+			  
+			  for(i=0;i<=preLoadedUserData.length;i++){
+				  var user = preLoadedUserData[i];
+				  
+				  user.id = generateUUID();
+				  
+				  $scope.userList.push(user);
+			  }
+			
+		   };
+		   
+		   $scope.getRetiredPlayers = function(){
+			    $scope.userList = [];
+				preLoadedUserData.map(function(playes){
+					if(playes.retired){
+						$scope.userList.push(playes);
+					}
+				});
+		   };
+		   
+		   $scope.filterFootballer = function(){
+		   		$scope.userList = [];
+			    var filterData = preLoadedUserData.filter(filterByFootballer);
+				$scope.userList = filterData;
+		   };
+		   
+		   function filterByFootballer(player){
+			      if(player.isFoodBoller){
+						return player;
+				  }
+		   };
+		   
+		   $scope.searchName = function(){
+			// console.log("##### Search key "+$scope.searchKey);
+			
+			var player =  preLoadedUserData.find(findTextInMap);
+			//$scope.searchTextIndex  =  preLoadedUserData.indexOf(findTextInMap);
+			
+			$scope.similarSearchText =  'Name :'+player.name+', Age : '+player.age;
+			 
+		   };
+		   
+		   function customeDirectiveTest(){
+			  var directive ={};
+			  directive.template= "Testing directive";
+			  
+			  return directive;
+		   };
+		   
+		   function findTextInMap(player){
+			   var temPlayerName = player.name.toUpperCase();
+			   var textBoxKey = document.getElementById("searchkey").value.toUpperCase();
+			      console.log("#####  key "+textBoxKey +"  : "+textBoxKey);
+			   if(temPlayerName === textBoxKey){
+				 return true;
+			   }
+		   };
+		   
+		   function generateUUID() {
+			return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+			    (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
+			  );
+		   }
+				
+	  })
+	  .directive("customedirectivetest",function (){
+		var directive ={};
+		// directive.restrict="E"
+		// directive.template= "<h1>Testing directive</h1>";
+		directive.templateUrl= "Test.html";
+		 directive.scope = {
+			searchKeyData :"@"
+		 };
+		 return directive;
+		
+	  })
+	  .controller('modalController', function($scope, $http, $uibModalInstance, dataToEditAndIndex){
+			$scope.sqldData = dataToEditAndIndex.tabledata;
+			
+			$scope.editData = {
+				   id:dataToEditAndIndex.companydata.id,
+				   name:dataToEditAndIndex.companydata.name,
+				   email:dataToEditAndIndex.companydata.email,
+				   phone:dataToEditAndIndex.companydata.phone,
+				   isPermanent:dataToEditAndIndex.companydata.isPermanent,
+				   branch:dataToEditAndIndex.companydata.branch
+			 };
+			 
+			$scope.company = dataToEditAndIndex.companydata;
+
+			// console.log("######### UI MODEL CONTROLER ######==> "+JSON.stringify(dataToEditAndIndex.companydata) );
+								
+			 $scope.updateData = function(){
+				
+					var updateCompanyPayload = {
+						  id:$scope.editData.id,
+						  name:$scope.editData.name,
+						  email:$scope.editData.email,
+						  phone:$scope.editData.phone,
+						  branch:$scope.editData.branch,
+						  isPermanent:$scope.editData.isPermanent
+					}
+											
+					$http.post("http://localhost:8080/api/company/save", updateCompanyPayload).then(
+							function successCallback(response) {
+							
+							if(response.data){
+								var dataToUpdateInTable = {
+									id:response.data.id,
+									name:response.data.name,
+									email:response.data.email,
+									phone:response.data.phone,
+									isPermanent:response.data.isPermanent,
+									branch:response.data.branch
+								};
+									
+								var index = dataToEditAndIndex.editindex;
+								$scope.sqldData[index] = dataToUpdateInTable;
+								
+								$scope.formData = {}; 
+							}
+													   
+					     },
+						function errorCallback(response) {
+								console.log("Failed to update company data"+response)
+						}
+					);
+					
+					
+				    $uibModalInstance.close($scope.user);
+			 };
+				  
+			 $scope.cancel = function(){
+			    $uibModalInstance.dismiss('cancel');
+			 }
+		});
+
+    </script>		
+</body>
+</html>
